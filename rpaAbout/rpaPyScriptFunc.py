@@ -16,12 +16,12 @@ def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None):
             self.varname = varname
 
         def __str__(self):
-            return f'传入参数\'{self.varname}\'的类型不正确'
+            return f'传入参数\'{self.varname}\'的类型或内容不符合要求，查看内部函数dict_parmTypeJudge'
 
     dict_parmTypeJudge = {
         'path' : type(path) is str,
         'isrecreate' : type(isrecreate) is bool,
-        'mkwhat' : mkwhat in ['Dir', 'File'],
+        'mkwhat' : mkwhat in ['Dir', 'File', None],
     }
 
     for parm in dict_parmTypeJudge.keys():
@@ -74,10 +74,8 @@ def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None):
 
     for filetype in dict_fileType.keys():
         list_FileType += dict_fileType[filetype]
-    if '.' + path.split('\\')[-1].split('.')[-1] not in list_FileType:
-        isFile = False
-    else:
-        isFile = True
+
+    isFile = '.' + path.split('\\')[-1].split('.')[-1] in list_FileType
 
     if (mkwhat == 'Dir') | (isFile == False):
         mkDir(path)
@@ -99,6 +97,27 @@ def writeToExcel(path:str, values:dict, sheetname=0, columns:list=None, istransp
     :return:
     '''
     import xlwings as xw
+
+    class parmTypeError(Exception):
+        def __init__(self, varname):
+            self.varname = varname
+
+        def __str__(self):
+            return f'传入参数\'{self.varname}\'的类型或内容不符合要求，查看内部函数dict_parmTypeJudge'
+
+    dict_parmTypeJudge = {
+        'path' : type(path) is str,
+        'istranspose' : type(istranspose) is bool,
+        'isvisible' : type(isvisible) is bool,
+        'isaddbook' : type(isaddbook) is bool,
+        'sheetname' : type(sheetname) in [str, int],
+        'values' : type(values) is dict,
+        'columns' : (type(columns) is list) & (columns is None),
+    }
+
+    for parm in dict_parmTypeJudge.keys():
+        if dict_parmTypeJudge[parm] == False:
+            raise parmTypeError(parm)
 
     app = xw.App(visible=isvisible, add_book=isaddbook)
     wb = app.books.open(path)
