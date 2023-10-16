@@ -12,6 +12,9 @@ def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None, sheet_name=None
     import os
     import shutil
     import openpyxl
+    class disunityPathSlash(Exception):
+        def __str__(self):
+            return 'Unify the use of slashes or backslashes in the path'
 
     class srcFileNotExist(Exception):
         def __init__(self, srcfile):
@@ -45,10 +48,12 @@ def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None, sheet_name=None
         :return: file or folder name
         '''
 
-        if '\\' in path:
+        if ('\\' in path) & ('/' not in path):
             fileOrDirName = path.split('\\')[-1]
-        else:
+        elif ('\\' not in path) & ('/' in path):
             fileOrDirName = path.split('/')[-1]
+        else:
+            raise disunityPathSlash
 
         return fileOrDirName
 
