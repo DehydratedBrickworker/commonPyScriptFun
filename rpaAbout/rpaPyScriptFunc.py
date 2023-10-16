@@ -1,62 +1,135 @@
 # Rpa开发常用的python功能代码
 
 # 创建文件或文件夹的功能
-def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None):
+def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None, sheet_name=None):
     '''
-    :param path: 路径
-    :param isrecreate: 如果文件已存在，是否删除并重新创建
-    :param mkwhat: 创建文件还是文件夹
+    :param path:
+    :param isrecreate: recreate (If the file already exists) ?
+    :param mkwhat: make file or folder?
+    :param sheet_name: sheet name for create excel book
     :return:
     '''
     import os
     import shutil
+    import openpyxl
+
+    class srcFileNotExist(Exception):
+        def __init__(self, srcfile):
+            self.srcfile = srcfile
+
+        def __str__(self):
+            return f'source file <{self.srcfile}> not exist,Unable to copy'
 
     class parmTypeError(Exception):
         def __init__(self, varname):
             self.varname = varname
 
         def __str__(self):
-            return f'传入参数\'{self.varname}\'的类型或内容不符合要求，查看内部函数dict_parmTypeJudge'
+            return f'parameter \'{self.varname}\' type or content not satisfiable，should refer to <dict_parmTypeJudge>'
 
     dict_parmTypeJudge = {
-        'path' : type(path) is str,
+        'path' : type(path) in [str, list],
         'isrecreate' : type(isrecreate) is bool,
-        'mkwhat' : mkwhat in ['Dir', 'File', None],
+        'mkwhat' : mkwhat in ['Dir', 'File', 'Copy', 'Excel', None],
+        'sheet_name' : (type(sheet_name) is dict) | (sheet_name is None),
     }
 
     for parm in dict_parmTypeJudge.keys():
         if dict_parmTypeJudge[parm] == False:
             raise parmTypeError(parm)
 
-    def mkDir(path):
-        if os.path.exists(path):
-            if isrecreate == False:
-                print('{}文件夹已存在 -> 无需创建'.format(path.split('\\')[-1]))
-            elif isrecreate == True:
-                print('{}文件夹存在 -> 准备删除并重新创建'.format(path.split('\\')[-1]))
-                shutil.rmtree(path)
-                os.mkdir(path)
-                print('{}文件夹已删除并重新创建'.format(path.split('\\')[-1]))
-        else:
-            print('{}文件夹不存在->等待创建'.format(path.split('\\')[-1]))
-            os.mkdir(path)
-            print('{}文件夹已创建'.format(path.split('\\')[-1]))
+    def getFileName(path):
+        '''
+        get file or folder name
+        :param path: file or folder path
+        :return: file or folder name
+        '''
 
-    def mkFile(path):
-        if os.path.exists(path):
-            if isrecreate == False:
-                print('{}文件已存在 -> 无需创建'.format(path.split('\\')[-1]))
-            elif isrecreate == True:
-                print('{}文件存在 -> 准备删除并重新创建'.format(path.split('\\')[-1]))
-                os.remove(path)
-                file = open(path, 'w')
-                file.close()
-                print('{}文件已删除并重新创建'.format(path.split('\\')[-1]))
+        if '\\' in path:
+            fileOrDirName = path.split('\\')[-1]
         else:
-            print('{}文件不存在->等待创建'.format(path.split('\\')[-1]))
+            fileOrDirName = path.split('/')[-1]
+
+        return fileOrDirName
+
+    def pathExistAndHandleWay(path):
+        '''
+        print('{} file or folder already exist -> no need to create or copy'.format(getFileName(path)))
+        print('{} file or folder already exist -> preparing to delete and recreate or copy'.format(getFileName(path)))
+        print('{} file or folder already deleted and recreated or copied'.format(getFileName(path)))
+        print('{} file or folder does not exist -> waiting for creation or copy'.format(getFileName(path)))
+        print('{} file or folder already created or copied'.format(getFileName(path)))
+        :return:
+        '''
+
+        if os.path.exists(path):
+            if isrecreate is False:
+                print('{} file or folder already exist -> no need to create or copy'.format(getFileName(path)))
+                howToDo = None
+            elif isrecreate is True:
+                print('{} file or folder already exist -> delete and recreate or copy'.format(getFileName(path)))
+                howToDo = 'Recreate'
+        else:
+            print('{} file or folder does not exist -> creation or copy'.format(getFileName(path)))
+            howToDo = 'Create'
+
+        return howToDo
+
+    def mkDir():
+        howToDo = pathExistAndHandleWay(path)
+        if howToDo is None:
+            pass
+        elif howToDo == 'Recreate':
+            shutil.rmtree(path)
+            os.mkdir(path)
+        elif howToDo == 'Create':
+            os.mkdir(path)
+
+    def mkFile():
+        howToDo = pathExistAndHandleWay(path)
+        if howToDo is None:
+            pass
+        elif howToDo == 'Recreate':
+            os.remove(path)
             file = open(path, 'w')
             file.close()
-            print('{}文件已创建'.format(path.split('\\')[-1]))
+        elif howToDo == 'Create':
+            file = open(path, 'w')
+            file.close()
+
+    def copyFile():
+        howToDo = pathExistAndHandleWay(path[1])
+        if os.path.exists(path[0]):
+            if howToDo is None:
+                pass
+            elif howToDo == 'Recreate':
+                os.remove(path[1])
+                shutil.copyfile(path[0], path[1])
+            elif howToDo == 'Created':
+                shutil.copyfile(path[0], path[1])
+        else:
+            raise srcFileNotExist(path[0])
+
+    def mkExcel():
+
+        def mkExcel():
+
+            workbook = openpyxl.Workbook(path)
+            if sheet_name is not None:
+                for sht_loc in sheet_name.keys():
+                    worksheet = workbook.create_sheet(sht_loc)
+                    worksheet.title = sheet_name[sht_loc]
+            workbook.save(path)
+
+        howToDo = pathExistAndHandleWay(path)
+        if howToDo is None:
+            pass
+        elif howToDo == 'Recreate':
+            os.remove(path)
+            mkExcel()
+        elif howToDo == 'Create':
+            mkExcel()
+
 
     dict_fileType = {
         'Excel文件类型' : ['.xls', '.xlsx', '.csv', '.xlsm', '.et'],
@@ -75,12 +148,26 @@ def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None):
     for filetype in dict_fileType.keys():
         list_FileType += dict_fileType[filetype]
 
-    isFile = '.' + path.split('\\')[-1].split('.')[-1] in list_FileType
+    is_XlsxOrXlsm = '.' + path.split('\\')[-1].split('.')[-1] in ['xlsx', '.xlsm']
+    if type(path) is str:
+        if '.' + path.split('\\')[-1].split('.')[-1] in list_FileType:
+            if is_XlsxOrXlsm:
+                isWhat = 'Excel'
+            elif ('.' + path.split('\\')[-1].split('.')[-1] in list_FileType) & (not is_XlsxOrXlsm):
+                isWhat = 'File'
+        else:
+            isWhat = 'Dir'
+    elif type(path) is list:
+        isWhat = 'Copy'
 
-    if (mkwhat == 'Dir') | (isFile == False):
-        mkDir(path)
-    elif (mkwhat == 'File') | (isFile == True):
-        mkFile(path)
+    if (mkwhat == 'Dir') | (isWhat == 'Dir'):
+        mkDir()
+    elif (mkwhat == 'File') | (isWhat == 'File'):
+        mkFile()
+    elif (mkwhat == 'Copy') | (isWhat == 'Copy'):
+        copyFile()
+    elif (mkwhat == 'Excel') | (isWhat == 'Excel'):
+        mkExcel()
 
     return path
 
@@ -123,7 +210,7 @@ def writeToExcel(path:str, values:dict, sheetname=0, columns:list=None, istransp
     wb = app.books.open(path)
     sht = wb.sheets[sheetname]
     print('开始写入Excel')
-    if (columns is not None) & (len(columns) > 0):
+    if columns is not None:
         sht.range('A1').value=columns
         print('成功写入列名')
     if len(values.keys()) > 0:
