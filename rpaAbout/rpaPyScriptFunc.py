@@ -1,5 +1,32 @@
 # Rpa开发常用的python功能代码
 
+# Excel表格及其内容是否存在检测的功能
+def fileAbsentCheck(path):
+    '''
+    table and content is exists?
+    :param path: table path
+    :return: bool : table and content is exists?
+    '''
+    import os
+    import pandas as pd
+
+    contentIsNone = True
+    tableIsExist = os.path.exists(path)
+    if tableIsExist:
+        df_Table = pd.read_excel(path)
+        if df_Table.shape[0] > 0:
+            tableIsExist = True
+        else:
+            tableIsExist = False
+
+    if (tableIsExist is True) & (contentIsNone is True):
+        print(f'{path} table and content is exists')
+        return True
+    else:
+        print(f'{path} table or content not exists')
+        return False
+
+
 # 创建文件或文件夹的功能
 def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None, sheet_name=None):
     '''
@@ -181,11 +208,11 @@ def mkDirOrFile(path:str, isrecreate:bool=True, mkwhat:str=None, sheet_name=None
 def writeToExcel(path:str, values:dict, sheetname=0, columns:list=None, istranspose=False, isvisible=False, isaddbook=False):
     '''
 
-    :param path: Excel文件路径
-    :param values: 写入位置:写入的值 组成的字典
-    :param sheetname: 页名
-    :param columns: 列名组成的列表，默认值为None->跳过写入列名的步骤
-    :param istranspose: 是否转置
+    :param path: path of Excel file
+    :param values: dict of table locate:value
+    :param sheetname: pagename
+    :param columns: list of table columns
+    :param istranspose:
     :return:
     '''
     import xlwings as xw
