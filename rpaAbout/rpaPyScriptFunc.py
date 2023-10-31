@@ -310,7 +310,7 @@ def dfDiffContentHandle(df:list, connect_condition, find_what:dict, sec_table_sy
             # 判断当前查询条件元素在主副数据框中是否唯一
             if (df[0][mainConnectField].values.tolist().count(condition_content) > 1) | (df[1][secConnectField].values.tolist().count(condition_content) > 1):
                 # 如果不唯一，则在返回结果的字典中标记并不再查找此查询条件元素的字段内容
-                dict_DiffContent[mainConnectField] = 'main or secondary table non unique'
+                dict_DiffContent[condition_content] = 'main or secondary table non unique'
                 continue
 
             # 遍历需要查询的内容不同字段的字段名称
